@@ -1,0 +1,60 @@
+---
+title: "R Machine Learning"
+output: html_document
+---
+
+This is to try and predict the manner in which an exercise was done.
+
+Using different machine learning tools that R provides, I used two different algorigthms that both had high predictive abilities.
+
+First loading and cleaning the data was neccessary.
+
+```{r}
+library(caret)
+library(dplyr)
+library(randomForest)
+library(e1071)
+setwd("C:/Users/Zhao/Downloads")
+data <- read.csv("pml-training.csv", na.strings = c("NA",""))
+data <- data[ , colSums(is.na(data)) == 0]
+data <- subset(data, select = -(1:6))
+```
+
+I broke the data into training and testing sections.
+
+```{r}
+inTrain <- createDataPartition(data$classe, p=0.6, list=F)
+training <- data[inTrain,]
+testing <- data[-inTrain,]
+```
+
+Then created a random forest model. The formula used with the caret package took a long time to load. So, I used the randomForest formula since the compute time was much quicker. We can see that the first several variables carry most of the predictive ability
+
+```{r}
+ModRF <- randomForest(classe ~ ., data=training)
+varImpPlot(ModRF)
+```
+
+I created predictions for the test data set using the model I trained for the random forest and looked at a confusion matrix to see the general predictive ability of the model. The predictive ability was very high at a accuracy of .9957 and an extremely low P-Value.
+
+```{r}
+testRF <- predict(ModRF,testing)
+confusionMatrix(testRF, testing$classe)
+```
+
+I repeated the model, testing, and confusion matrix for a support vector machine. This model was less accurate than the orgininal.
+
+```{r}
+ModSV <- svm(classe ~ ., data=training)
+testSV <- predict(ModSV,testing)
+confusionMatrix(testSV, testing$classe)
+```
+
+Seeing as how the random forest model was much more accurate, I would use that to predict out of sample. I expect the out of sample error to be faily low (above 80% accuracy), but higher than the current error rate. Below, the model is used to predict the 20 different test cases. Seeing as how I expect this model to have a higher than 80% accuracy rate out of sample, these should all be correct with the possibility of possibly one wrong.
+
+```{r}
+testdata <- read.csv("pml-testing.csv", na.strings = c("NA",""))
+data <- data[ , colSums(is.na(data)) == 0]
+data <- subset(data, select = -(1:6))
+predict(ModRF,testdata)
+```
